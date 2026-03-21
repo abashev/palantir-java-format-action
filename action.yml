@@ -1,0 +1,115 @@
+name: 'Palantir Java Format Check'
+description: 'Checks Java code formatting using palantir-java-formatter native binary'
+author: 'abashev'
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  version:
+    description: 'Version of palantir-java-formatter to use'
+    required: true
+    default: '2.89.0'
+  mode:
+    description: 'Which files to check: "changed" for files from PR/push, "all" for every .java file'
+    required: false
+    default: 'changed'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download palantir-java-format native binary
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${VERSION}"
+
+        OS=$(uname -s)
+        ARCH=$(uname -m)
+
+        case "${OS}-${ARCH}" in
+          Linux-x86_64)  SUFFIX="linux-glibc_x86-64" ;;
+          Linux-aarch64) SUFFIX="linux-glibc_aarch64" ;;
+          Darwin-arm64)  SUFFIX="macos_aarch64" ;;
+          *)
+            echo "::error::No palantir-java-format native binary for ${OS}-${ARCH}. Supported: Linux x86_64, Linux aarch64, macOS aarch64."
+            exit 1
+            ;;
+        esac
+
+        ARTIFACT="palantir-java-format-native-${VERSION}-nativeImage-${SUFFIX}.bin"
+        DOWNLOAD_URL="${BASE_URL}/${ARTIFACT}"
+        BINARY="${{ github.action_path }}/palantir-java-format"
+
+        echo "Downloading palantir-java-format ${VERSION} (${SUFFIX})..."
+        if ! curl -sSfL -o "$BINARY" "$DOWNLOAD_URL"; then
+          rm -f "$BINARY"
+          echo "::error::Failed to download palantir-java-format from: $DOWNLOAD_URL"
+          exit 1
+        fi
+
+        chmod +x "$BINARY"
+        echo "PJF_BINARY=$BINARY" >> "$GITHUB_ENV"
+
+    - name: Collect files to check
+      shell: bash
+      run: |
+        MODE="${{ inputs.mode }}"
+
+        if [ "$MODE" = "all" ]; then
+          echo "Mode: all — checking every .java file"
+          FILES=$(find . -name '*.java' -not -path './.git/*' | tr '\n' ' ')
+        elif [ -n "${{ github.event.pull_request.number }}" ]; then
+          echo "Mode: changed (PR #${{ github.event.pull_request.number }})"
+          FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.java$' | tr '\n' ' ')
+        elif [ -n "${{ github.event.before }}" ]; then
+          echo "Mode: changed (push ${{ github.event.before }}...${{ github.sha }})"
+          FILES=$(git diff --name-only --diff-filter=ACMR ${{ github.event.before }}...${{ github.sha }} -- '*.java' | tr '\n' ' ')
+        else
+          echo "Mode: changed — unknown event, falling back to all .java files"
+          FILES=$(find . -name '*.java' -not -path './.git/*' | tr '\n' ' ')
+        fi
+
+        if [ -z "$FILES" ]; then
+          echo "No Java files to check."
+          echo "PJF_FILES=" >> "$GITHUB_ENV"
+        else
+          echo "Files to check:"
+          echo "$FILES" | tr ' ' '\n' | grep -v '^$'
+          echo "PJF_FILES=$FILES" >> "$GITHUB_ENV"
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Run format check
+      shell: bash
+      run: |
+        if [ -z "$PJF_FILES" ]; then
+          echo "Nothing to check, skipping."
+          exit 0
+        fi
+
+        UNFORMATTED=()
+        for FILE in $PJF_FILES; do
+          if [ -f "$FILE" ]; then
+            if ! "$PJF_BINARY" --palantir --dry-run --set-exit-if-changed "$FILE" > /dev/null 2>&1; then
+              UNFORMATTED+=("$FILE")
+            fi
+          fi
+        done
+
+        if [ ${#UNFORMATTED[@]} -gt 0 ]; then
+          echo "::error::Java formatting issues found!"
+          echo ""
+          echo "The following files are not formatted correctly:"
+          for FILE in "${UNFORMATTED[@]}"; do
+            echo "  $FILE"
+          done
+          echo ""
+          echo "Run palantir-java-formatter locally to fix:"
+          echo "  palantir-java-format --palantir --replace ${UNFORMATTED[*]}"
+          exit 1
+        fi
+
+        echo "All files are correctly formatted."

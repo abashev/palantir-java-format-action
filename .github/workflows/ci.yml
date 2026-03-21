@@ -1,0 +1,28 @@
+name: Test Action
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-changed:
+    name: Test mode=changed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./
+        with:
+          version: '2.89.0'
+          mode: changed
+
+  test-all:
+    name: Test mode=all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          version: '2.89.0'
+          mode: all

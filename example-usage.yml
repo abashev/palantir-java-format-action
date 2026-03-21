@@ -1,0 +1,21 @@
+name: Java Format Check
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  format-check:
+    name: Check Java formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check formatting
+        uses: abashev/palantir-java-format-action@v1
+        with:
+          version: '2.89.0'
+          mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
