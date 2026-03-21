@@ -19,12 +19,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Download palantir-java-format native binary
+    - name: Detect platform
+      id: platform
       shell: bash
       run: |
-        VERSION="${{ inputs.version }}"
-        BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${VERSION}"
-
         OS=$(uname -s)
         ARCH=$(uname -m)
 
@@ -38,6 +36,22 @@ runs:
             ;;
         esac
 
+        echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
+
+    - name: Cache palantir-java-format binary
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.action_path }}/palantir-java-format
+        key: palantir-java-format-${{ inputs.version }}-${{ steps.platform.outputs.suffix }}
+
+    - name: Download palantir-java-format native binary
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        SUFFIX="${{ steps.platform.outputs.suffix }}"
+        BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${VERSION}"
         ARTIFACT="palantir-java-format-native-${VERSION}-nativeImage-${SUFFIX}.bin"
         DOWNLOAD_URL="${BASE_URL}/${ARTIFACT}"
         BINARY="${{ github.action_path }}/palantir-java-format"
@@ -50,7 +64,10 @@ runs:
         fi
 
         chmod +x "$BINARY"
-        echo "PJF_BINARY=$BINARY" >> "$GITHUB_ENV"
+
+    - name: Set binary path
+      shell: bash
+      run: echo "PJF_BINARY=${{ github.action_path }}/palantir-java-format" >> "$GITHUB_ENV"
 
     - name: Collect files to check
       shell: bash
