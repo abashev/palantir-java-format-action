@@ -40,7 +40,7 @@ runs:
 
     - name: Cache palantir-java-format binary
       id: cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ github.action_path }}/palantir-java-format
         key: palantir-java-format-${{ inputs.version }}-${{ steps.platform.outputs.suffix }}
