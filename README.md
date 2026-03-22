@@ -58,6 +58,21 @@ jobs:
           mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
 ```
 
+## Git pre-commit hook
+
+You can also use the same formatter as a local git hook to catch formatting issues before they reach CI.
+
+Copy [`pre-commit`](pre-commit) to your project:
+
+```bash
+cp pre-commit .git/hooks/pre-commit
+# or with a custom hooks directory
+cp pre-commit .githooks/pre-commit
+git config core.hooksPath .githooks
+```
+
+The hook automatically downloads and caches the native binary on first run, then checks only staged `.java` files on each commit.
+
 ## Supported platforms
 
 - Linux x86_64
