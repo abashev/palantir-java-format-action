@@ -79,8 +79,8 @@ runs:
           FILES=$(find . -name '*.java' -not -path './.git/*' | tr '\n' ' ')
         elif [ -n "${{ github.event.pull_request.number }}" ]; then
           echo "Mode: changed (PR #${{ github.event.pull_request.number }})"
-          FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep '\.java$' | tr '\n' ' ')
-        elif [ -n "${{ github.event.before }}" ]; then
+          FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | { grep '\.java$' || true; } | tr '\n' ' ')
+        elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${{ github.event.before }}" 2>/dev/null; then
           echo "Mode: changed (push ${{ github.event.before }}...${{ github.sha }})"
           FILES=$(git diff --name-only --diff-filter=ACMR ${{ github.event.before }}...${{ github.sha }} -- '*.java' | tr '\n' ' ')
         else
