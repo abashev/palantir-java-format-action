@@ -10,7 +10,7 @@ inputs:
   version:
     description: 'Version of palantir-java-formatter to use'
     required: true
-    default: '2.89.0'
+    default: '2.96.0'
   mode:
     description: 'Which files to check: "changed" for files from PR/push, "all" for every .java file'
     required: false
@@ -37,6 +37,18 @@ runs:
         esac
 
         echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
+
+    - name: Check for newer palantir-java-format version
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        LATEST=$(curl -sSfL https://api.github.com/repos/palantir/palantir-java-format/releases/latest | jq -r .tag_name)
+
+        if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+          echo "Could not determine the latest palantir-java-format version, skipping version check."
+        elif [ "$LATEST" != "$VERSION" ]; then
+          echo "::warning::A newer palantir-java-format version is available: $LATEST (you are using $VERSION)"
+        fi
 
     - name: Cache palantir-java-format binary
       id: cache

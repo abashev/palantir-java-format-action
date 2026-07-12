@@ -11,14 +11,14 @@ No Java, Maven, or Gradle required — downloads a native binary from Maven Cent
 
 - uses: abashev/palantir-java-format-action@v1
   with:
-    version: '2.89.0'
+    version: '2.96.0'
 ```
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `version` | yes | `2.89.0` | Version of palantir-java-format native binary |
+| `version` | yes | `2.96.0` | Version of palantir-java-format native binary |
 | `mode` | no | `changed` | `changed` — only files from PR or push; `all` — every `.java` file in repo |
 
 ## How `mode: changed` works
@@ -54,7 +54,7 @@ jobs:
 
       - uses: abashev/palantir-java-format-action@v1
         with:
-          version: '2.89.0'
+          version: '2.96.0'
           mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
 ```
 

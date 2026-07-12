@@ -17,5 +17,5 @@ jobs:
       - name: Check formatting
         uses: abashev/palantir-java-format-action@v1
         with:
-          version: '2.89.0'
+          version: '2.96.0'
           mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
