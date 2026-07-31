@@ -9,7 +9,7 @@ No Java, Maven, or Gradle required — downloads a native binary from Maven Cent
 ```yaml
 - uses: actions/checkout@v4
 
-- uses: abashev/palantir-java-format-action@v1
+- uses: abashev/palantir-java-format-action@v2
   with:
     version: '2.96.0'
 ```
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: abashev/palantir-java-format-action@v1
+      - uses: abashev/palantir-java-format-action@v2
         with:
           version: '2.96.0'
           mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
