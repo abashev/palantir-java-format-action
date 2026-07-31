@@ -38,6 +38,30 @@ When the check fails, fix locally with:
 palantir-java-format --palantir --replace <files>
 ```
 
+## Excluding files
+
+Both the action and the [pre-commit hook](#git-pre-commit-hook) read an optional
+`.palantir-java-format-exclude` file from the repository root. Every non-empty, non-comment
+line is a [git pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec)
+(relative to the repo root); any Java file matching a pattern is skipped. If the file is
+absent, nothing is excluded.
+
+```gitignore
+# .palantir-java-format-exclude
+
+# Standalone jbang scripts — the formatter would rewrite their //DEPS directives into comments
+samples/**
+
+# Generated sources
+**/build/generated/**
+```
+
+Notes:
+
+- Patterns use git pathspec syntax, so both `samples/**` and `samples` match everything under `samples/`.
+- Lines starting with `#` are comments; blank lines are ignored.
+- This file is the **single source of exclusions** — it is shared by the action and the hook, so there is no separate action input to configure.
+
 ## Recommended setup
 
 ```yaml
@@ -71,7 +95,7 @@ cp pre-commit .githooks/pre-commit
 git config core.hooksPath .githooks
 ```
 
-The hook automatically downloads and caches the native binary on first run, then checks only staged `.java` files on each commit.
+The hook automatically downloads and caches the native binary on first run, then checks only staged `.java` files on each commit. It also honours the same [`.palantir-java-format-exclude`](#excluding-files) file as the action.
 
 ## Supported platforms
 
